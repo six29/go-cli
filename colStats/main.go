@@ -20,7 +20,6 @@ func main() {
 
 func run(filenames []string, op string, column int, out io.Writer) error {
 	var opFunc statsFunc
-
 	if len(filenames) == 0 {
 		return ErrNoFiles
 	}
@@ -35,4 +34,22 @@ func run(filenames []string, op string, column int, out io.Writer) error {
 	default:
 		return fmt.Errorf("%w: %s", ErrInvalidOperation, op)
 	}
+	consolidate := make([]float64, 0)
+	for _, fname := range filenames {
+		f, err := os.Open(fname)
+		if err != nil {
+			return fmt.Errorf("can not open file: %w", err)
+		}
+		data, err := csv2float(f, column)
+		if err != nil {
+			return err
+		}
+		if err := f.Close(); err != nil {
+			return err
+		}
+		consolidate = append(consolidate, data...)
+	}
+	_, err := fmt.Fprintln(out, opFunc(consolidate))
+	return err
+
 }
